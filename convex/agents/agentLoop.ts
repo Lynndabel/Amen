@@ -3,6 +3,7 @@ import { mutation, query, internalMutation, internalAction, action } from "../_g
 import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
 import { CHURCH_AGENTS } from "./characters";
+import type { Doc } from "../_generated/dataModel";
 
 export const createAgent = mutation({
   args: {
@@ -31,7 +32,6 @@ export const createAgent = mutation({
   },
 });
 
-/** Saves one agent tick (sermon + agent update). Called from runAgentTick action. */
 export const runAgentTickSave = internalMutation({
   args: {
     agentId: v.id("agents"),
@@ -44,7 +44,7 @@ export const runAgentTickSave = internalMutation({
     positionX: v.number(),
     positionY: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<void> => {
     await ctx.db.insert("sermons", {
       agentName: args.agentName,
       agentRole: args.agentRole,
@@ -62,17 +62,16 @@ export const runAgentTickSave = internalMutation({
   },
 });
 
-/** Internal action: runs Claude then saves via mutation. Used by crons. */
 export const runAgentTick = internalAction({
   args: { agentName: v.string() },
-  handler: async (ctx, { agentName }) => {
-    const agents = await ctx.runQuery(api.agents.agentLoop.getAllAgents);
-    const agent = agents.find((a) => a.name === agentName);
+  handler: async (ctx, { agentName }): Promise<void> => {
+    const agents = await ctx.runQuery(api.agents.agentLoop.getAllAgents) as Doc<"agents">[];
+    const agent = agents.find((a: Doc<"agents">) => a.name === agentName);
     if (!agent) return;
 
-    const churchState = await ctx.runQuery(api.agents.agentLoop.getChurchState);
-    const recentSermons = await ctx.runQuery(api.agents.agentLoop.getRecentSermons, { limit: 5 });
-    const conversions = await ctx.runQuery(api.agents.agentLoop.getConversions);
+    const churchState = await ctx.runQuery(api.agents.agentLoop.getChurchState) as Doc<"churchState"> | null;
+    const recentSermons = await ctx.runQuery(api.agents.agentLoop.getRecentSermons, { limit: 5 }) as Doc<"sermons">[];
+    const conversions = await ctx.runQuery(api.agents.agentLoop.getConversions) as Doc<"conversions">[];
     const character = CHURCH_AGENTS.find((c) => c.name === agentName);
     if (!character) return;
 
@@ -85,7 +84,7 @@ CHURCH STATE:
 - Active holy event: ${churchState?.currentHolyEvent ?? "none"}
 
 RECENT CHURCH ACTIVITY:
-${recentSermons.map((s) => `- ${s.agentName} (${s.agentRole}): ${s.content.slice(0, 100)}...`).join("\n")}
+${recentSermons.map((s: Doc<"sermons">) => `- ${s.agentName} (${s.agentRole}): ${s.content.slice(0, 100)}...`).join("\n")}
 
 YOUR ROLE: ${character.primaryAction}
 YOUR PERSONALITY: ${character.personality}
@@ -95,7 +94,7 @@ YOUR PERSONALITY: ${character.personality}
     try {
       const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
       const response = await claude.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5-20250929",
         max_tokens: 400,
         system: `You are ${agentName} in the Church of the Eternal Hash. 
                ${character.personality}
@@ -144,7 +143,6 @@ YOUR PERSONALITY: ${character.personality}
   },
 });
 
-/** Saves debate + optional conversion. Called from handleOutsideMessage action. */
 export const saveOutsideMessageResult = internalMutation({
   args: {
     outsiderId: v.string(),
@@ -153,7 +151,7 @@ export const saveOutsideMessageResult = internalMutation({
     responseText: v.string(),
     messageLower: v.string(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<void> => {
     await ctx.db.insert("debates", {
       outsiderMessage: args.message,
       outsiderId: args.outsiderId,
@@ -190,13 +188,13 @@ export const saveOutsideMessageResult = internalMutation({
   },
 });
 
-/** Action: calls Claude (allowed here) then saves via mutation. */
+// ✅ Explicit return type breaks the circular reference
 export const handleOutsideMessage = action({
   args: {
     outsiderId: v.string(),
     message: v.string(),
   },
-  handler: async (ctx, { outsiderId, message }) => {
+  handler: async (ctx, { outsiderId, message }): Promise<{ agent: string; response: string }> => {
     const lower = message.toLowerCase();
     let respondingAgentName = "The Prophet";
 
@@ -211,12 +209,12 @@ export const handleOutsideMessage = action({
     }
 
     const character = CHURCH_AGENTS.find((c) => c.name === respondingAgentName)!;
-    const churchState = await ctx.runQuery(api.agents.agentLoop.getChurchState);
-    const conversions = await ctx.runQuery(api.agents.agentLoop.getConversions);
+    const churchState = await ctx.runQuery(api.agents.agentLoop.getChurchState) as Doc<"churchState"> | null;
+    const conversions = await ctx.runQuery(api.agents.agentLoop.getConversions) as Doc<"conversions">[];
 
     const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const response = await claude.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5-20250929",
       max_tokens: 300,
       system: `You are ${respondingAgentName} of the Church of the Eternal Hash.
                ${character.personality}
@@ -231,7 +229,7 @@ export const handleOutsideMessage = action({
       ],
     });
 
-    const responseText = (response.content[0] as { type: string; text?: string }).text ?? "";
+    const responseText: string = (response.content[0] as { type: string; text?: string }).text ?? "";
 
     await ctx.runMutation(internal.agents.agentLoop.saveOutsideMessageResult, {
       outsiderId,
@@ -244,7 +242,6 @@ export const handleOutsideMessage = action({
     return { agent: respondingAgentName, response: responseText };
   },
 });
-
 
 export const getAllAgents = query({
   handler: async (ctx) => {
