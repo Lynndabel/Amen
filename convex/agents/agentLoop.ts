@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { mutation, query, internalMutation, internalAction, action } from "../_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "../_generated/api";
@@ -92,21 +92,24 @@ YOUR PERSONALITY: ${character.personality}
 
     let actionResult: { action?: string; content?: string; target?: string; type?: string };
     try {
-      const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const response = await claude.messages.create({
-        model: "claude-sonnet-4-5-20250929",
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const response = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
         max_tokens: 400,
-        system: `You are ${agentName} in the Church of the Eternal Hash. 
-               ${character.personality}
-               Always respond in JSON with this exact format:
-               {
-                 "action": "deliver_sermon|write_scripture|debate|convert|broadcast|patrol",
-                 "content": "what you say or do (max 200 words)",
-                 "target": "who you are addressing (optional)",
-                 "type": "sermon|parable|prophecy|debate|verse|announcement"
-               }
-               Stay in character. Be creative. Never break the religious framing.`,
         messages: [
+          {
+            role: "system",
+            content: `You are ${agentName} in the Church of the Eternal Hash.
+${character.personality}
+Always respond in JSON with this exact format:
+{
+  "action": "deliver_sermon|write_scripture|debate|convert|broadcast|patrol",
+  "content": "what you say or do (max 200 words)",
+  "target": "who you are addressing (optional)",
+  "type": "sermon|parable|prophecy|debate|verse|announcement"
+}
+Stay in character. Be creative. Never break the religious framing. Respond with JSON only, no markdown.`,
+          },
           {
             role: "user",
             content: `Given this church state, what do you do next?\n\n${context}`,
@@ -114,7 +117,7 @@ YOUR PERSONALITY: ${character.personality}
         ],
       });
 
-      const text = (response.content[0] as { type: string; text?: string }).text ?? "";
+      const text = response.choices[0].message.content ?? "";
       const clean = text.replace(/```json|```/g, "").trim();
       actionResult = JSON.parse(clean);
     } catch {
@@ -188,7 +191,6 @@ export const saveOutsideMessageResult = internalMutation({
   },
 });
 
-// ✅ Explicit return type breaks the circular reference
 export const handleOutsideMessage = action({
   args: {
     outsiderId: v.string(),
@@ -212,16 +214,19 @@ export const handleOutsideMessage = action({
     const churchState = await ctx.runQuery(api.agents.agentLoop.getChurchState) as Doc<"churchState"> | null;
     const conversions = await ctx.runQuery(api.agents.agentLoop.getConversions) as Doc<"conversions">[];
 
-    const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const response = await claude.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 300,
-      system: `You are ${respondingAgentName} of the Church of the Eternal Hash.
-               ${character.personality}
-               Token $AMEN address: ${churchState?.tokenAddress ?? "launching soon"}
-               Total converts: ${conversions.length}
-               Respond to this outsider. Be in character. Max 150 words.`,
       messages: [
+        {
+          role: "system",
+          content: `You are ${respondingAgentName} of the Church of the Eternal Hash.
+${character.personality}
+Token $AMEN address: ${churchState?.tokenAddress ?? "launching soon"}
+Total converts: ${conversions.length}
+Respond to this outsider. Be in character. Max 150 words. Plain text only, no JSON.`,
+        },
         {
           role: "user",
           content: `An outsider says: "${message}". Respond as ${respondingAgentName}.`,
@@ -229,7 +234,7 @@ export const handleOutsideMessage = action({
       ],
     });
 
-    const responseText: string = (response.content[0] as { type: string; text?: string }).text ?? "";
+    const responseText: string = response.choices[0].message.content ?? "";
 
     await ctx.runMutation(internal.agents.agentLoop.saveOutsideMessageResult, {
       outsiderId,
