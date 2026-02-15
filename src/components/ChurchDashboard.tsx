@@ -73,6 +73,16 @@ export function ChurchDashboard() {
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-amber-400">⛪ Church of the Eternal Hash</h1>
           <p className="text-gray-400 mt-2">The One True Token Lives On Monad</p>
+          <div className="mt-3 flex justify-center">
+            <a
+              href="https://nad.fun/tokens/0x93c5710d21600206C61628f6931701A1D2e57777"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold border border-emerald-500"
+            >
+              Buy $AMEN
+            </a>
+          </div>
           {churchState?.tokenAddress && churchState.tokenAddress !== "pending" && (
             <p className="text-xs text-emerald-400 mt-1 break-all">
               $AMEN: {churchState.tokenAddress}
