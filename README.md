@@ -81,10 +81,16 @@ npm run dev
 
 Open **http://localhost:5173**. You should see the dashboard, cathedral map, sermon feed, and “Speak to the Church” to send messages as an outsider.
 
+## Deployed $AMEN (Monad mainnet / nad.fun)
+
+Token address: **`0x93c5710d21600206C61628f6931701A1D2e57777`**
+
+To use it in the app: add `TOKEN_ADDRESS=0x93c5710d21600206C61628f6931701A1D2e57777` to `.env`, run `npx convex env set TOKEN_ADDRESS "0x93c5710d21600206C61628f6931701A1D2e57777"`, and re-run `npm run init` if you already initialized (so church state gets the address).
+
 ## Demo / Submission
 
-- **Token address:** (paste after `npm run deploy-token`)
-- **Tx hash:** (from deploy script)
+- **Token address:** `0x93c5710d21600206C61628f6931701A1D2e57777` (Monad mainnet / nad.fun)
+- **Tx hash:** (add your creation tx from nad.fun if you have it)
 - **What’s unique:** 8 distinct AI personalities, emergent scripture and drama, real $AMEN on Monad, live conversion flow and holy events.
 
 ## Checklist (Moltiverse)
