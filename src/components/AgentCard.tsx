@@ -18,30 +18,42 @@ export function AgentCard({ agentId }: { agentId: string }) {
   const agent = agents.find((a) => a._id === agentId);
   if (!agent) return null;
 
-  const statusColor =
+  const statusClass =
     agent.status === "idle"
-      ? "bg-gray-700 text-gray-300"
+      ? "congregation-card idle"
       : agent.status === "debating" || agent.status === "debate"
-        ? "bg-red-900 text-red-300"
-        : "bg-emerald-900 text-emerald-300";
+        ? "congregation-card debating"
+        : "congregation-card active";
+
+  const initials = agent.name
+    .split(" ")
+    .map((n) => n.charAt(0))
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-2xl">{ROLE_EMOJIS[agent.role] ?? "🤖"}</span>
-        <div>
-          <span className="font-bold text-white">{agent.name}</span>
-          <span
-            className={`ml-2 text-xs px-2 py-0.5 rounded ${statusColor}`}
-          >
-            {agent.status}
-          </span>
+    <div className={statusClass}>
+      <div className="member-header">
+        <div className="member-avatar">{initials}</div>
+        <div className="member-info">
+          <div className="member-name">{agent.name}</div>
+          <div className="member-role">{ROLE_EMOJIS[agent.role] ?? "🤖"} {agent.role}</div>
         </div>
       </div>
-      <p className="text-gray-400 text-sm">{agent.currentActivity}</p>
-      <p className="text-amber-600 text-xs mt-2">
-        {agent.conversionsCount} conversions
-      </p>
+
+      <div className="member-stats">
+        <div className="stat-item">
+          <span className="stat-item-value">{agent.conversionsCount}</span>
+          <span className="stat-item-label">Converts</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-item-value">{agent.status}</span>
+          <span className="stat-item-label">Status</span>
+        </div>
+      </div>
+
+      <p className="member-activity">{agent.currentActivity}</p>
     </div>
   );
 }

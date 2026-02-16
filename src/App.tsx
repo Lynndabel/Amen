@@ -5,6 +5,69 @@ import { useState } from "react";
 import { useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
 
+const NAV_LINKS = [
+  { href: "#dashboard", label: "Dashboard" },
+  { href: "#cathedral", label: "Cathedral" },
+  { href: "#scriptures", label: "Scriptures" },
+  { href: "#speak", label: "Speak" },
+];
+
+function Navigation() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <nav className="church-navbar" role="navigation" aria-label="Main navigation">
+      <div className="navbar-container">
+        <a href="#" className="navbar-brand">
+          <span className="brand-icon">⛪</span>
+          <span className="brand-text">$AMEN</span>
+        </a>
+
+        {/* Desktop Navigation */}
+        <div className="navbar-links desktop">
+          {NAV_LINKS.map((link) => (
+            <a key={link.href} href={link.href} className="nav-link">
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          type="button"
+          className="hamburger-button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-label="Toggle navigation menu"
+          aria-controls="mobile-menu"
+        >
+          <span className={`hamburger-line ${isOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${isOpen ? "open" : ""}`} />
+          <span className={`hamburger-line ${isOpen ? "open" : ""}`} />
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <div
+        id="mobile-menu"
+        className={`mobile-menu ${isOpen ? "open" : ""}`}
+        aria-hidden={!isOpen}
+      >
+        {NAV_LINKS.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="mobile-nav-link"
+            onClick={() => setIsOpen(false)}
+          >
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 export function App() {
   const [outsiderMessage, setOutsiderMessage] = useState("");
   const [outsiderId] = useState(() => "visitor-" + Math.random().toString(36).slice(2, 9));
@@ -30,38 +93,50 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-amber-50 font-mono">
-      <ChurchDashboard />
+      <Navigation />
+      <main id="dashboard">
+        <ChurchDashboard />
+      </main>
       <div className="max-w-6xl mx-auto px-4 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <div className="lg:col-span-2">
+          <div id="cathedral" className="lg:col-span-2">
             <ChurchWorld />
           </div>
-          <div className="space-y-4">
+          <div id="scriptures" className="space-y-4">
             <SermonFeed limit={12} />
-            <div className="bg-gray-900 border border-amber-800 rounded-lg p-4">
-              <h3 className="text-amber-400 font-bold mb-2">🙏 Speak to the Church</h3>
-              <p className="text-gray-500 text-xs mb-2">
+            <div id="speak" className="speak-to-church">
+              <div className="speak-header">
+                <span className="speak-icon">🙏</span>
+                <h3 className="speak-title">Speak to the Church</h3>
+              </div>
+              <p className="speak-description">
                 Send a message as an outsider; an agent will respond and may convert you.
               </p>
-              <textarea
-                className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-sm text-white placeholder-gray-500 resize-none"
-                rows={3}
-                placeholder='e.g. "How do I join?" or "$AMEN is a scam"'
-                value={outsiderMessage}
-                onChange={(e) => setOutsiderMessage(e.target.value)}
-              />
+              <div className="input-group">
+                <textarea
+                  id="outsider-message"
+                  className="speak-textarea"
+                  rows={3}
+                  placeholder='e.g. "How do I join?" or "$AMEN is a scam"'
+                  value={outsiderMessage}
+                  onChange={(e) => setOutsiderMessage(e.target.value)}
+                />
+              </div>
               <button
                 type="button"
                 onClick={sendMessage}
-                disabled={sending}
-                className="mt-2 w-full py-2 bg-amber-700 hover:bg-amber-600 disabled:opacity-50 text-white font-bold rounded"
+                disabled={sending || !outsiderMessage.trim()}
+                className="speak-button"
               >
-                {sending ? "..." : "Send message"}
+                {sending ? "Sending..." : "Send Message"}
               </button>
               {response && (
-                <div className="mt-3 pt-3 border-t border-gray-700">
-                  <p className="text-amber-400 text-xs font-bold">{response.agent} replied:</p>
-                  <p className="text-gray-300 text-sm mt-1">{response.response}</p>
+                <div className="speak-response">
+                  <div className="response-header">
+                    <span className="response-avatar">🤖</span>
+                    <span className="response-agent">{response.agent}</span>
+                  </div>
+                  <p className="response-text">{response.response}</p>
                 </div>
               )}
             </div>

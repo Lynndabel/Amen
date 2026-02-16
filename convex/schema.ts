@@ -13,12 +13,19 @@ export default defineSchema({
     position: v.object({ x: v.number(), y: v.number() }),
   }),
 
+  externalAgents: defineTable({
+    name: v.string(),
+    personality: v.string(),
+    createdAt: v.number(),
+  }),
+
   sermons: defineTable({
     agentName: v.string(),
     agentRole: v.string(),
     type: v.string(),
     content: v.string(),
     targetAgentId: v.optional(v.string()),
+    persuasionTechnique: v.optional(v.string()),
     createdAt: v.number(),
   }),
 
@@ -26,6 +33,7 @@ export default defineSchema({
     convertedId: v.string(),
     convertedBy: v.string(),
     level: v.string(),
+    convertedType: v.optional(v.union(v.literal("outsider"), v.literal("agent"))),
     txHash: v.optional(v.string()),
     notes: v.string(),
     timestamp: v.number(),
@@ -42,12 +50,38 @@ export default defineSchema({
   }),
 
   debates: defineTable({
-    outsiderMessage: v.string(),
-    outsiderId: v.string(),
-    respondingAgent: v.string(),
-    response: v.string(),
-    outcome: v.string(),
-    timestamp: v.number(),
+    outsiderMessage: v.optional(v.string()),
+    outsiderId: v.optional(v.string()),
+    respondingAgent: v.optional(v.string()),
+    response: v.optional(v.string()),
+    outcome: v.optional(v.string()),
+    timestamp: v.optional(v.number()),
+
+    initiatorAgentName: v.optional(v.string()),
+    targetAgentName: v.optional(v.string()),
+    initiatorKind: v.optional(v.union(v.literal("church"), v.literal("external"))),
+    targetKind: v.optional(v.union(v.literal("church"), v.literal("external"))),
+    initiatorExternalAgentId: v.optional(v.id("externalAgents")),
+    targetExternalAgentId: v.optional(v.id("externalAgents")),
+    topic: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("ongoing"), v.literal("ended"))),
+    messages: v.optional(
+      v.array(
+        v.object({
+          role: v.string(),
+          agentName: v.string(),
+          content: v.string(),
+        })
+      )
+    ),
+    createdAt: v.optional(v.number()),
+  }),
+
+  alliances: defineTable({
+    agentName: v.string(),
+    allyAgentName: v.string(),
+    type: v.union(v.literal("defense"), v.literal("evangelism"), v.literal("scripture")),
+    createdAt: v.number(),
   }),
 
   conversations: defineTable({

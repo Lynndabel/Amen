@@ -12,52 +12,49 @@ const ROLE_EMOJIS: Record<string, string> = {
   bishop: "👑",
 };
 
+const ROLE_GRADIENTS: Record<string, string> = {
+  prophet: "linear-gradient(135deg, #FFD700, #FFA500)",
+  inquisitor: "linear-gradient(135deg, #DC2626, #991B1B)",
+  missionary: "linear-gradient(135deg, #3B82F6, #1D4ED8)",
+  scribe: "linear-gradient(135deg, #A855F7, #7C3AED)",
+  treasurer: "linear-gradient(135deg, #10B981, #059669)",
+  evangelist: "linear-gradient(135deg, #F59E0B, #D97706)",
+  doubter: "linear-gradient(135deg, #6B7280, #4B5563)",
+  bishop: "linear-gradient(135deg, #EF4444, #B91C1C)",
+};
+
 export function ChurchWorld() {
   type Agent = { _id: string; name: string; role: string; position: { x: number; y: number }; currentActivity: string; status: string };
   const agents = (useQuery(api.agents.agentLoop.getAllAgents as any) ?? []) as Agent[];
 
   return (
-    <div
-      className="relative bg-gray-900 border border-amber-800 rounded-lg overflow-hidden"
-      style={{ width: "100%", minHeight: 400, maxWidth: 800 }}
-    >
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,215,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,215,0,0.3) 1px, transparent 1px)",
-          backgroundSize: "50px 50px",
-        }}
-      />
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-amber-600 text-lg font-bold opacity-50">
-        Cathedral of the Eternal Hash
-      </div>
-      <div
-        className="absolute text-4xl opacity-30 pointer-events-none"
-        style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}
-      >
-        ✝️
-      </div>
+    <div className="cathedral-container">
+      <div className="cathedral-grid" />
+      <div className="cathedral-title">Cathedral of the Eternal Hash</div>
+      <div className="cathedral-cross">✝️</div>
       {agents.map((agent) => (
         <div
           key={agent._id}
-          className="absolute transition-all duration-1000 cursor-pointer group"
+          className="agent-marker"
           style={{ left: agent.position.x, top: agent.position.y }}
         >
-          <div className="text-2xl" title={`${agent.name}: ${agent.currentActivity}`}>
+          <div
+            className="agent-avatar"
+            style={{ background: ROLE_GRADIENTS[agent.role] ?? ROLE_GRADIENTS.prophet }}
+            title={`${agent.name}: ${agent.currentActivity}`}
+          >
             {ROLE_EMOJIS[agent.role] ?? "🤖"}
           </div>
-          <div className="text-xs text-amber-400 text-center whitespace-nowrap -mt-1">
-            {agent.name.split(" ")[1]}
-          </div>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-gray-950 border border-amber-600 rounded p-2 text-xs text-white hidden group-hover:block z-10 shadow-xl">
-            <strong className="text-amber-400">{agent.name}</strong>
-            <p className="text-gray-300 mt-1">{agent.currentActivity}</p>
+          <div className="agent-label">{agent.name.split(" ")[1]}</div>
+          <div className="agent-tooltip">
+            <strong className="agent-tooltip-name">{agent.name}</strong>
+            <p className="agent-tooltip-activity">{agent.currentActivity}</p>
+            <span className={`agent-tooltip-status ${agent.status}`}>{agent.status}</span>
           </div>
           {agent.status !== "idle" && (
             <div
-              className="absolute inset-0 rounded-full bg-amber-400 opacity-20 animate-ping pointer-events-none"
-              style={{ width: 32, height: 32, left: 0, top: 0 }}
+              className={`agent-ping ${agent.status}`}
+              style={{ width: 32, height: 32 }}
             />
           )}
         </div>
